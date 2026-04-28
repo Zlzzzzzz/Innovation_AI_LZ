@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Week 9 — UX Flow & Performance Visualization</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3248;
+      --accent: #6c63ff;
+      --accent2: #00c2a8;
+      --gold: #f5a623;
+      --silver: #a8b2c8;
+      --bronze: #cd7f32;
+      --green: #22c55e;
+      --red: #ef4444;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1d27 0%, #1e2236 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2rem 2.5rem;
+    }
+
+    header .tag {
+      display: inline-block;
+      background: rgba(108, 99, 255, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(108, 99, 255, 0.3);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      margin-bottom: 0.75rem;
+    }
+
+    header h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #e2e8f0, #a5b4fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header p {
+      color: var(--muted);
+      margin-top: 0.4rem;
+      font-size: 0.95rem;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 2.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    h2 .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px; height: 26px;
+      background: rgba(108, 99, 255, 0.2);
+      border: 1px solid rgba(108, 99, 255, 0.4);
+      border-radius: 50%;
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+    }
+
+    /* ── UX Flow ───────────────────────────────────────────────── */
+    .flow-wrapper {
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      min-width: 700px;
+    }
+
+    .flow-node {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem 1rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .flow-node .icon {
+      font-size: 1.8rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .flow-node .label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      margin-bottom: 0.25rem;
+    }
+
+    .flow-node .title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.3rem;
+    }
+
+    .flow-node .sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .flow-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 0.4rem;
+      flex-shrink: 0;
+      gap: 2px;
+    }
+
+    .flow-arrow .arrow-label {
+      font-size: 0.65rem;
+      color: var(--muted);
+      white-space: nowrap;
+      max-width: 90px;
+      text-align: center;
+    }
+
+    .flow-arrow svg {
+      color: var(--accent);
+    }
+
+    .flow-node.node-1 { border-top: 3px solid var(--accent); }
+    .flow-node.node-2 { border-top: 3px solid var(--accent2); }
+    .flow-node.node-3 { border-top: 3px solid var(--gold); }
+    .flow-node.node-4 { border-top: 3px solid var(--green); }
+
+    /* ── Stats row ─────────────────────────────────────────────── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .stat-card .stat-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .stat-card .stat-val {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stat-card .stat-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .c-accent { color: var(--accent); }
+    .c-green  { color: var(--green); }
+    .c-gold   { color: var(--gold); }
+    .c-accent2 { color: var(--accent2); }
+
+    /* ── Chart grid ────────────────────────────────────────────── */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+
+    .chart-card h3 {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 1rem;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 240px;
+    }
+
+    /* ── Sequence table ─────────────────────────────────────────── */
+    .seq-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    .seq-table th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      padding: 0.65rem 0.9rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .seq-table td {
+      padding: 0.7rem 0.9rem;
+      border-bottom: 1px solid rgba(46,50,72,0.6);
+      vertical-align: middle;
+    }
+
+    .seq-table tr:last-child td { border-bottom: none; }
+
+    .seq-table tr:hover td { background: rgba(108,99,255,0.04); }
+
+    .badge {
+      display: inline-block;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .badge-pass { background: rgba(34,197,94,0.15); color: var(--green); }
+    .badge-gold { background: rgba(245,166,35,0.15); color: var(--gold); }
+    .badge-silver { background: rgba(168,178,200,0.15); color: var(--silver); }
+    .badge-bronze { background: rgba(205,127,50,0.15); color: var(--bronze); }
+
+    /* ── SLO table ─────────────────────────────────────────────── */
+    .slo-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .slo-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1.1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .slo-item .slo-label {
+      font-size: 0.83rem;
+      color: var(--text);
+    }
+
+    .slo-item .slo-target {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .slo-item .slo-result {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .slo-item .slo-val {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    .slo-item .slo-status {
+      font-size: 0.7rem;
+      color: var(--green);
+    }
+
+    /* ── Privacy pills ─────────────────────────────────────────── */
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 0.5rem;
+    }
+
+    .pill {
+      background: rgba(0,194,168,0.1);
+      border: 1px solid rgba(0,194,168,0.25);
+      border-radius: 20px;
+      padding: 5px 13px;
+      font-size: 0.8rem;
+      color: var(--accent2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pill::before {
+      content: "✓";
+      font-weight: 700;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.78rem;
+      padding: 1.5rem;
+      border-top: 1px solid var(--border);
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="tag">Week 9 Deliverable</div>
+  <h1>Web3 RaaS — UX Flow &amp; Performance</h1>
+  <p>Wallet → Generate Proof → Share → Verify &nbsp;·&nbsp; Latency benchmark (n = 3,000) &amp; End-to-end simulation (n = 1,000)</p>
+</header>
+
+<main>
+
+  <!-- ① UX Flow -->
+  <section class="card">
+    <h2><span class="num">1</span> End-to-End UX Flow</h2>
+    <div class="flow-wrapper">
+      <div class="flow">
+
+        <div class="flow-node node-1">
+          <div class="icon">👛</div>
+          <div class="label">Step 1</div>
+          <div class="title">Connect</div>
+          <div class="sub">MetaMask / WalletConnect<br/>sign ownership message</div>
+        </div>
+
+        <div class="flow-arrow">
+          <div class="arrow-label">wallet_address, chain</div>
+          <svg width="40" height="16" viewBox="0 0 40 16" fill="none">
+            <line x1="0" y1="8" x2="34" y2="8" stroke="currentColor" stroke-width="2"/>
+            <polyline points="28,2 36,8 28,14" stroke="currentColor" stroke-width="2" fill="none"/>
+          </svg>
+          <div class="arrow-label">POST /v1/check</div>
+        </div>
+
+        <div class="flow-node node-2">
+          <div class="icon">🔐</div>
+          <div class="label">Step 2</div>
+          <div class="title">Generate</div>
+          <div class="sub">Trust API signs proof<br/>HMAC-SHA256, 60 min TTL</div>
+        </div>
+
+        <div class="flow-arrow">
+          <div class="arrow-label">signed proof blob</div>
+          <svg width="40" height="16" viewBox="0 0 40 16" fill="none">
+            <line x1="0" y1="8" x2="34" y2="8" stroke="currentColor" stroke-width="2"/>
+            <polyline points="28,2 36,8 28,14" stroke="currentColor" stroke-width="2" fill="none"/>
+          </svg>
+          <div class="arrow-label">base64url / QR / link</div>
+        </div>
+
+        <div class="flow-node node-3">
+          <div class="icon">📤</div>
+          <div class="label">Step 3</div>
+          <div class="title">Share</div>
+          <div class="sub">Copy JSON, link, or QR<br/>~714 B payload</div>
+        </div>
+
+        <div class="flow-arrow">
+          <div class="arrow-label">share payload</div>
+          <svg width="40" height="16" viewBox="0 0 40 16" fill="none">
+            <line x1="0" y1="8" x2="34" y2="8" stroke="currentColor" stroke-width="2"/>
+            <polyline points="28,2 36,8 28,14" stroke="currentColor" stroke-width="2" fill="none"/>
+          </svg>
+          <div class="arrow-label">decode + HMAC check</div>
+        </div>
+
+        <div class="flow-node node-4">
+          <div class="icon">✅</div>
+          <div class="label">Step 4</div>
+          <div class="title">Verify</div>
+          <div class="sub">dApp checks signature<br/>+ expiry + nonce</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="pills" style="margin-top: 1.25rem;">
+      <div class="pill">Address hashed (SHA-256) in proof</div>
+      <div class="pill">Only coarse claims exposed (Bronze / Silver / Gold)</div>
+      <div class="pill">Signed expiry (default 60 min)</div>
+      <div class="pill">Nonce binds proof to verifier — defeats replay</div>
+      <div class="pill">Ed25519 upgrade path in schema</div>
+    </div>
+  </section>
+
+  <!-- ② Headline stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">p99 End-to-End</div>
+      <div class="stat-val c-accent">0.064 <span style="font-size:1rem">ms</span></div>
+      <div class="stat-sub">All 4 stages · n = 3,000</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Tamper Detection</div>
+      <div class="stat-val c-green">100%</div>
+      <div class="stat-sub">23 / 23 tampered proofs caught</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Median Payload</div>
+      <div class="stat-val c-gold">714 <span style="font-size:1rem">B</span></div>
+      <div class="stat-sub">Fits QR v10 @ ECL-M (no chunking)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">False Accepts</div>
+      <div class="stat-val c-accent2">0</div>
+      <div class="stat-sub">Out of 1,000 simulated interactions</div>
+    </div>
+  </div>
+
+  <!-- ③ Charts -->
+  <div class="chart-grid">
+
+    <div class="chart-card">
+      <h3>Latency by Stage — mean / p50 / p95 / p99 (ms)</h3>
+      <div class="chart-wrap">
+        <canvas id="latencyBar"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Stage Share of End-to-End Latency (mean)</h3>
+      <div class="chart-wrap">
+        <canvas id="stagePie"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Simulation Results — 1,000 Interactions</h3>
+      <div class="chart-wrap">
+        <canvas id="simBar"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Payload Size Distribution (bytes)</h3>
+      <div class="chart-wrap">
+        <canvas id="payloadBar"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ④ Step-by-step UX table -->
+  <section class="card">
+    <h2><span class="num">2</span> Screen-by-Screen UX</h2>
+    <table class="seq-table">
+      <thead>
+        <tr>
+          <th>Step</th>
+          <th>Screen</th>
+          <th>User Goal</th>
+          <th>Primary Action</th>
+          <th>Data Leaving Wallet</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1</strong></td>
+          <td>Connect</td>
+          <td>Prove ownership of an address</td>
+          <td>Select wallet / sign message</td>
+          <td><code style="color:var(--accent2);font-size:0.8rem">wallet_address</code>, <code style="color:var(--accent2);font-size:0.8rem">chain</code></td>
+        </tr>
+        <tr>
+          <td><strong>2</strong></td>
+          <td>Generate</td>
+          <td>Request a proof of my tier</td>
+          <td>Pick <code style="color:var(--accent2);font-size:0.8rem">minimum_tier</code>, nonce</td>
+          <td>Request to Trust API</td>
+        </tr>
+        <tr>
+          <td><strong>3</strong></td>
+          <td>Share</td>
+          <td>Hand proof to a verifier</td>
+          <td>Copy JSON / link / QR</td>
+          <td>Signed proof blob only</td>
+        </tr>
+        <tr>
+          <td><strong>4</strong></td>
+          <td>Verify</td>
+          <td>Let the dApp validate</td>
+          <td>Paste / scan payload</td>
+          <td>(verifier side)</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ⑤ Error handling -->
+  <section class="card">
+    <h2><span class="num">3</span> Verifier Error Handling</h2>
+    <table class="seq-table">
+      <thead>
+        <tr>
+          <th>Failure Mode</th>
+          <th>Reason Code</th>
+          <th>Stage</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Unknown version string</td>
+          <td><code style="color:var(--red);font-size:0.8rem">bad_version</code></td>
+          <td>Verify</td>
+        </tr>
+        <tr>
+          <td>Unsupported signature algorithm</td>
+          <td><code style="color:var(--red);font-size:0.8rem">bad_alg</code></td>
+          <td>Verify</td>
+        </tr>
+        <tr>
+          <td>Signature mismatch (tampered)</td>
+          <td><code style="color:var(--red);font-size:0.8rem">bad_signature</code></td>
+          <td>Verify</td>
+        </tr>
+        <tr>
+          <td>Proof past <code style="color:var(--accent2);font-size:0.8rem">expires_at</code></td>
+          <td><code style="color:var(--red);font-size:0.8rem">expired</code></td>
+          <td>Verify</td>
+        </tr>
+        <tr>
+          <td>Malformed / truncated JSON</td>
+          <td><code style="color:var(--red);font-size:0.8rem">malformed proof: …</code></td>
+          <td>Decode</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ⑥ SLO comparison -->
+  <section class="card">
+    <h2><span class="num">4</span> SLO Comparison — Week 8 Dashboard vs Week 9 Results</h2>
+    <div class="slo-grid">
+      <div class="slo-item">
+        <div>
+          <div class="slo-label">p50 End-to-End Latency</div>
+          <div class="slo-target">Target ≤ 250 ms (dashboard SLO)</div>
+        </div>
+        <div class="slo-result">
+          <div class="slo-val">0.033 ms</div>
+          <div class="slo-status">✓ Pass — ~7,500× under budget</div>
+        </div>
+      </div>
+      <div class="slo-item">
+        <div>
+          <div class="slo-label">p95 End-to-End Latency</div>
+          <div class="slo-target">Target ≤ 400 ms (dashboard SLO)</div>
+        </div>
+        <div class="slo-result">
+          <div class="slo-val">0.041 ms</div>
+          <div class="slo-status">✓ Pass — ~9,700× under budget</div>
+        </div>
+      </div>
+      <div class="slo-item">
+        <div>
+          <div class="slo-label">Tamper Detection Rate</div>
+          <div class="slo-target">Target ≥ 99%</div>
+        </div>
+        <div class="slo-result">
+          <div class="slo-val">100%</div>
+          <div class="slo-status">✓ Pass</div>
+        </div>
+      </div>
+      <div class="slo-item">
+        <div>
+          <div class="slo-label">Payload fits in one QR</div>
+          <div class="slo-target">Target ≤ ~1,370 chars @ ECL-M</div>
+        </div>
+        <div class="slo-result">
+          <div class="slo-val">714 B median</div>
+          <div class="slo-status">✓ Pass — no chunking needed</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Web3 Reputation-as-a-Service · Week 9 UX Flow &amp; Performance · n = 3,000 warm trials + 1,000 e2e interactions · Single vCPU sandbox
+</footer>
+
+<script>
+  Chart.defaults.color = '#8892a4';
+  Chart.defaults.borderColor = 'rgba(46,50,72,0.8)';
+  Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+
+  const ACCENT  = '#6c63ff';
+  const ACCENT2 = '#00c2a8';
+  const GOLD    = '#f5a623';
+  const GREEN   = '#22c55e';
+  const PURPLE2 = '#a78bfa';
+
+  // ── 1. Latency grouped bar ──────────────────────────────────
+  new Chart(document.getElementById('latencyBar'), {
+    type: 'bar',
+    data: {
+      labels: ['Generate', 'Encode', 'Decode', 'Verify', 'End-to-End'],
+      datasets: [
+        {
+          label: 'Mean',
+          data: [0.0131, 0.0067, 0.0065, 0.0090, 0.0352],
+          backgroundColor: 'rgba(108,99,255,0.7)',
+          borderColor: ACCENT,
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+        {
+          label: 'p50',
+          data: [0.0122, 0.0064, 0.0060, 0.0084, 0.0332],
+          backgroundColor: 'rgba(0,194,168,0.6)',
+          borderColor: ACCENT2,
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+        {
+          label: 'p95',
+          data: [0.0149, 0.0073, 0.0068, 0.0097, 0.0409],
+          backgroundColor: 'rgba(245,166,35,0.6)',
+          borderColor: GOLD,
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+        {
+          label: 'p99',
+          data: [0.0268, 0.0121, 0.0125, 0.0198, 0.0644],
+          backgroundColor: 'rgba(167,139,250,0.6)',
+          borderColor: PURPLE2,
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(4)} ms`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(46,50,72,0.5)' } },
+        y: {
+          grid: { color: 'rgba(46,50,72,0.5)' },
+          title: { display: true, text: 'ms', color: '#8892a4' },
+          ticks: { callback: v => v.toFixed(3) }
+        }
+      }
+    }
+  });
+
+  // ── 2. Stage share doughnut ─────────────────────────────────
+  new Chart(document.getElementById('stagePie'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Generate (0.0131 ms)', 'Encode (0.0067 ms)', 'Decode (0.0065 ms)', 'Verify (0.0090 ms)'],
+      datasets: [{
+        data: [0.0131, 0.0067, 0.0065, 0.0090],
+        backgroundColor: [
+          'rgba(108,99,255,0.8)',
+          'rgba(0,194,168,0.8)',
+          'rgba(245,166,35,0.8)',
+          'rgba(34,197,94,0.8)',
+        ],
+        borderColor: '#1a1d27',
+        borderWidth: 3,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+              const pct = ((ctx.parsed / total) * 100).toFixed(1);
+              return ` ${pct}% of total`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // ── 3. Simulation outcome bar ───────────────────────────────
+  new Chart(document.getElementById('simBar'), {
+    type: 'bar',
+    data: {
+      labels: ['Total', 'Valid ✓', 'Tampered (injected)', 'Detected ✓', 'False Accepts'],
+      datasets: [{
+        label: 'Count',
+        data: [1000, 977, 23, 23, 0],
+        backgroundColor: [
+          'rgba(108,99,255,0.7)',
+          'rgba(34,197,94,0.7)',
+          'rgba(239,68,68,0.7)',
+          'rgba(0,194,168,0.7)',
+          'rgba(239,68,68,0.4)',
+        ],
+        borderColor: [ACCENT, GREEN, '#ef4444', ACCENT2, '#ef4444'],
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: { label: ctx => ` ${ctx.parsed.x} interactions` }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(46,50,72,0.5)' } },
+        y: { grid: { color: 'rgba(46,50,72,0.5)' } }
+      }
+    }
+  });
+
+  // ── 4. Payload size bar ─────────────────────────────────────
+  new Chart(document.getElementById('payloadBar'), {
+    type: 'bar',
+    data: {
+      labels: ['Min\n(approx)', 'Mean\n710.8 B', 'Median\n714 B', 'p95\n716 B', 'QR v10 cap\n~1,370 B'],
+      datasets: [{
+        label: 'Bytes',
+        data: [672, 710.8, 714, 716, 1370],
+        backgroundColor: [
+          'rgba(108,99,255,0.5)',
+          'rgba(108,99,255,0.7)',
+          'rgba(0,194,168,0.7)',
+          'rgba(245,166,35,0.7)',
+          'rgba(34,197,94,0.3)',
+        ],
+        borderColor: [ACCENT, ACCENT, ACCENT2, GOLD, GREEN],
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: { label: ctx => ` ${ctx.parsed.y} bytes` }
+        },
+        annotation: {}
+      },
+      scales: {
+        x: { grid: { color: 'rgba(46,50,72,0.5)' } },
+        y: {
+          grid: { color: 'rgba(46,50,72,0.5)' },
+          title: { display: true, text: 'bytes', color: '#8892a4' },
+          min: 0, max: 1500,
+        }
+      }
+    }
+  });
+</script>
+
+</body>
+</html>
